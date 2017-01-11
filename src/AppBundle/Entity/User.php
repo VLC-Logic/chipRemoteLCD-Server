@@ -18,6 +18,7 @@ class User
      * @ORM\Column(name="id", type="integer")
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="AUTO")
+     * @ORM\OneToMany(targetEntity="Message", mappedBy="device")
      */
     private $id;
 
@@ -25,7 +26,6 @@ class User
      * @var string
      *
      * @ORM\Column(name="name", type="string", length=255, nullable=true)
-     + @ORM\OneToMany(targetEntity="Message", mappedBy="device")
      */
     private $name;
 
