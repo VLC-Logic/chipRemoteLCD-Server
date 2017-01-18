@@ -2,11 +2,14 @@
 
 namespace AppBundle\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use AppBundle\Entity\Message;
 use FOS\RestBundle\Controller\Annotations as Rest;
+use FOS\RestBundle\Controller\FOSRestController;
 use Symfony\Component\HttpFoundation\Request;
+use FOS\RestBundle\View\View;
+use FOS\RestBundle\Controller\Annotations\RequestParam as RequestParam;
 
-class APIController extends Controller
+class APIController extends FOSRestController
 {
     /**
      * @Rest\Get("/user/{id}")
@@ -61,7 +64,7 @@ class APIController extends Controller
     }
 
     /**
-     * @Rest\Get("/message")
+     * @Rest\Get("/messages")
      */
     public function getMessagesAction()
     {
@@ -114,6 +117,54 @@ class APIController extends Controller
                 'user' => $userid
             ));
         return $messages;
+    }
+
+    /**
+     * @Rest\Post("/message")
+     *
+     * @RequestParam(name="userid", requirements="\d+", nullable=false, strict=true, description="User Id")
+     * @RequestParam(name="deviceid", requirements="\d+", nullable=false, strict=true, description="Device Id")
+     * @RequestParam(name="msg", requirements="\w+", default="empty", description="Message")
+     *
+     * @param Request $request
+     *
+     * @return View
+     */
+    public function postMessageAction(Request $request)
+    {
+        $user = $this->getDoctrine()
+            ->getRepository('AppBundle:User')
+            ->find($request->get('userid'));
+        if (!$user) {
+            throw $this->createNotFoundException(
+                'No user found for id '.$request->get('userid')
+            );
+        }
+        $device = $this->getDoctrine()
+            ->getRepository('AppBundle:Device')
+            ->find($request->get('deviceid'));
+        if (!$device) {
+            throw $this->createNotFoundException(
+                'No device found for id '.$request->get('deviceid')
+            );
+        }
+
+        $message = new Message();;
+        $message->setUser($user);
+        $message->setDevice($device);
+        $message->setText($request->get('msg'));
+        $view = View::create();
+        $errors = $this->get('validator')->validate($message);
+        if (count($errors) == 0) {
+            $em = $this->getDoctrine()->getManager();
+            $em->persist($message);
+            $em->flush();
+            $view->setData($message)->setStatusCode(200);
+            return $view;
+        } else {
+            $view = $this->getErrorsView($errors);
+            return $view;
+        }
     }
 
 }

@@ -1,3 +1,0 @@
-lcd_api:
-    type: rest
-    resource: "@AppBundle/Controller/APIController.php"
